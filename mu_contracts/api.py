@@ -211,15 +211,73 @@ def _render_via_print_format(emp):
 
 def _inline_contract_images(html: str, emp) -> str:
 	"""Inline both the employee signature and the first-party signature from
-	Contract Settings into the HTML as base64 data URIs."""
+	Contract Settings into the HTML as base64 data URIs. Also inlines any
+	bundled app assets (fonts/letterhead images) so PDF generators that can't
+	fetch URLs (wkhtmltopdf, Chrome subprocess) still see them."""
 	if emp.signature_image:
 		html = _inline_private_image(html, emp.signature_image)
 	# First-party signature comes from the Contract Settings single-doctype.
-	# We cache the single in flags so multiple calls in the same request reuse it.
 	settings_sig = frappe.db.get_single_value("Contract Settings", "first_party_signature")
 	if settings_sig:
 		html = _inline_private_image(html, settings_sig)
+	# Inline /assets/mu_contracts/... URLs (fonts, header/footer images) as
+	# base64 data URIs. Critical for wkhtmltopdf which won't fetch local URLs.
+	html = _inline_app_assets(html)
 	return html
+
+
+_ASSET_MIME = {
+	"ttf": "font/ttf",
+	"otf": "font/otf",
+	"woff": "font/woff",
+	"woff2": "font/woff2",
+	"png": "image/png",
+	"jpg": "image/jpeg",
+	"jpeg": "image/jpeg",
+	"gif": "image/gif",
+	"svg": "image/svg+xml",
+}
+
+
+def _inline_app_assets(html: str) -> str:
+	"""Rewrite url('/assets/mu_contracts/...') and src="/assets/..." references
+	to inline base64 data URIs. Reads the file from disk so it works no matter
+	what PDF generator runs."""
+	import base64
+	import os
+	import re
+
+	app_root = frappe.get_app_path("mu_contracts", "public")
+
+	def file_to_data_uri(rel_path: str) -> str | None:
+		# rel_path looks like "fonts/Cairo-Regular.ttf" or "images/header.jpg"
+		safe_path = os.path.normpath(rel_path)
+		if safe_path.startswith(".."):
+			return None
+		full = os.path.join(app_root, safe_path)
+		if not os.path.isfile(full):
+			return None
+		ext = os.path.splitext(full)[1].lstrip(".").lower()
+		mime = _ASSET_MIME.get(ext, "application/octet-stream")
+		with open(full, "rb") as f:
+			data = base64.b64encode(f.read()).decode("ascii")
+		return f"data:{mime};base64,{data}"
+
+	def replace_url(match):
+		original = match.group(0)
+		path = match.group(1)  # e.g. "fonts/Cairo-Regular.ttf"
+		data_uri = file_to_data_uri(path)
+		return original.replace(f"/assets/mu_contracts/{path}", data_uri) if data_uri else original
+
+	# Match url('...'), url("..."), and src="..." pointing at our assets.
+	pattern = re.compile(r"/assets/mu_contracts/([A-Za-z0-9_./\-]+\.(?:ttf|otf|woff2?|png|jpe?g|gif|svg))")
+	# Do it in one pass: replace the path with its data URI everywhere it appears
+	def whole_url_replace(m):
+		path = m.group(1)
+		data_uri = file_to_data_uri(path)
+		return data_uri or m.group(0)
+
+	return pattern.sub(whole_url_replace, html)
 
 
 def _render_fallback(emp):
