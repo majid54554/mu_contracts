@@ -31,7 +31,7 @@ fixtures = [
 	},
 	{
 		"dt": "Workspace",
-		"filters": [["name", "=", "First Party"]],
+		"filters": [["name", "=", "إدارة العقود"]],
 	},
 ]
 

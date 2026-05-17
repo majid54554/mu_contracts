@@ -16,9 +16,9 @@
   "link_to": null,
   "link_type": null,
   "links": [],
-  "modified": "2026-05-17 11:36:33.790055",
+  "modified": "2026-05-17 15:17:13.018048",
   "module": "MU Contracts",
-  "name": "First Party",
+  "name": "إدارة العقود",
   "number_cards": [],
   "parent_page": "",
   "public": 1,
@@ -98,7 +98,7 @@
     "url": null
    }
   ],
-  "title": "First Party",
+  "title": "إدارة العقود",
   "type": "Workspace"
  }
 ]
