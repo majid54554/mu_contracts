@@ -73,6 +73,41 @@ def _normalize_phone(phone):
 	return "".join(c for c in str(phone or "") if c.isdigit() or c == "+")
 
 
+def _phone_variants(phone):
+	"""Return every plausible way the same Saudi phone number could be stored
+	in the DB so a single user-entered number matches all common formats:
+	  0501234567, +966501234567, 966501234567, 00966501234567, 501234567.
+	"""
+	digits = "".join(c for c in str(phone or "") if c.isdigit())
+	if not digits:
+		return []
+
+	# Strip leading country-code prefixes to find the local 9-digit part.
+	if digits.startswith("00966"):
+		local = digits[5:]
+	elif digits.startswith("966"):
+		local = digits[3:]
+	elif digits.startswith("0") and len(digits) > 9:
+		local = digits[1:]
+	else:
+		local = digits
+
+	variants = {
+		digits,                    # what user typed (digits only)
+		str(phone).strip(),        # raw input (in case it had +/spaces)
+		_normalize_phone(phone),   # digits + leading +
+	}
+	if local:
+		variants.update({
+			local,                 # 501234567
+			"0" + local,           # 0501234567
+			"966" + local,         # 966501234567
+			"+966" + local,        # +966501234567
+			"00966" + local,       # 00966501234567
+		})
+	return [v for v in variants if v]
+
+
 def _fallback_template():
 	"""Last-resort template used only if the Print Format is missing.
 	Normal installs ship the 'Contract Employee' Print Format via fixtures,
@@ -233,18 +268,38 @@ def _build_signed_html(emp):
 
 @frappe.whitelist(allow_guest=True)
 def lookup_employee(phone: str, national_id: str):
-	phone = _normalize_phone(phone)
 	national_id = str(national_id or "").strip()
+	phone_norm = _normalize_phone(phone)
 
-	if not phone or not national_id:
+	if not phone_norm or not national_id:
 		frappe.throw(_("يرجى إدخال رقم الجوال ورقم الهوية"))
 
+	# Try every plausible phone format so a user entering 0501234567 still
+	# matches a stored +966501234567 (and vice versa). Match national_id
+	# exactly OR with leading/trailing whitespace stripped on either side.
 	rows = frappe.get_all(
 		"Contract Employee",
-		filters={"phone_number": phone, "national_id": national_id},
+		filters={
+			"phone_number": ["in", _phone_variants(phone)],
+			"national_id": national_id,
+		},
 		fields=["name", "employee_name", "is_signed"],
 		limit=1,
 	)
+	if not rows:
+		# Fallback: maybe national_id is stored with extra whitespace.
+		# Look it up by phone variants alone and compare national_id loosely.
+		candidates = frappe.get_all(
+			"Contract Employee",
+			filters={"phone_number": ["in", _phone_variants(phone)]},
+			fields=["name", "employee_name", "is_signed", "national_id"],
+			limit=20,
+		)
+		for c in candidates:
+			if str(c.national_id or "").strip() == national_id:
+				rows = [c]
+				break
+
 	if not rows:
 		frappe.throw(_("لم نجد سجل بهذه البيانات. تأكد من رقم الجوال ورقم الهوية."))
 
