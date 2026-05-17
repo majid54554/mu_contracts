@@ -227,8 +227,11 @@ def _inline_contract_images(html: str, emp) -> str:
 
 
 _ASSET_MIME = {
-	"ttf": "font/ttf",
-	"otf": "font/otf",
+	# wkhtmltopdf (old QtWebKit) doesn't always honour "font/ttf" but reliably
+	# accepts the legacy "application/x-font-ttf" MIME for embedded fonts.
+	# Modern Chromium accepts either.
+	"ttf": "application/x-font-ttf",
+	"otf": "application/x-font-opentype",
 	"woff": "font/woff",
 	"woff2": "font/woff2",
 	"png": "image/png",
