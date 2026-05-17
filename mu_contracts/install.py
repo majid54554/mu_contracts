@@ -12,6 +12,9 @@ def after_install():
 	_ensure_default_print_format()
 	_ensure_contract_settings()
 	frappe.db.commit()
+	# Best-effort: download the Chromium binary so PDF rendering "just works".
+	# Failure here is non-fatal — wkhtmltopdf still works as a fallback.
+	_setup_playwright_chromium()
 
 
 def after_migrate():
@@ -19,6 +22,59 @@ def after_migrate():
 	_ensure_default_print_format()
 	_ensure_contract_settings()
 	frappe.db.commit()
+
+
+@frappe.whitelist()
+def install_chromium():
+	"""Whitelisted helper so the user can re-trigger the Chromium download
+	from Desk if the initial post-install attempt failed. Requires System
+	Manager role."""
+	if "System Manager" not in frappe.get_roles(frappe.session.user):
+		frappe.throw("Only System Manager can install Chromium.")
+	import io
+	import contextlib
+
+	buf = io.StringIO()
+	with contextlib.redirect_stdout(buf):
+		_setup_playwright_chromium()
+	return buf.getvalue()
+
+
+def _setup_playwright_chromium():
+	"""Download the Chromium binary that Playwright drives. Runs once after
+	install; safe to call again — Playwright skips if it's already there.
+
+	If this fails (no network, no permission to write to the cache dir, missing
+	system libraries on Linux) the app still works — _html_to_pdf falls back
+	to wkhtmltopdf. We just log it and tell the operator how to retry."""
+	import subprocess
+	import sys
+
+	try:
+		print("→ Installing Chromium binary for Playwright (one-time, ~170MB)...")
+		result = subprocess.run(
+			[sys.executable, "-m", "playwright", "install", "chromium"],
+			capture_output=True,
+			text=True,
+			timeout=600,
+		)
+		if result.returncode == 0:
+			print("✅ Chromium binary installed. PDF generation uses Chrome quality.")
+		else:
+			print(f"⚠️  Chromium install failed (exit {result.returncode}):")
+			print(result.stderr[-2000:] if result.stderr else "(no error output)")
+			print()
+			print("Retry manually on the server:")
+			print("    ./env/bin/playwright install chromium")
+			print("    Linux only: sudo ./env/bin/playwright install-deps chromium")
+	except FileNotFoundError:
+		print("⚠️  Playwright Python package not found. Run:")
+		print("    ./env/bin/pip install playwright")
+	except subprocess.TimeoutExpired:
+		print("⚠️  Chromium download timed out (10 min). Retry manually:")
+		print("    ./env/bin/playwright install chromium")
+	except Exception as e:
+		print(f"⚠️  Unexpected error setting up Playwright: {e}")
 
 
 def _ensure_default_print_format():

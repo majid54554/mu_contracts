@@ -9,6 +9,11 @@ readme = "README.md"
 dynamic = ["version"]
 dependencies = [
     "hijri-converter>=2.3.0",
+    # Playwright is used as a Chrome-quality PDF generator on Frappe v15/v16
+    # (where the built-in Chrome PDF generator isn't available). It's an
+    # auto-installed Python dependency; the Chromium binary itself is fetched
+    # by `after_install` on first install.
+    "playwright>=1.40.0",
 ]
 
 [build-system]
