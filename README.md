@@ -36,7 +36,7 @@
 cd /path/to/frappe-bench
 
 # 2. اجلب التطبيق
-bench get-app https://github.com/<USERNAME>/mu_contracts
+bench get-app https://github.com/majid54554/mu_contracts
 
 # 3. ثبّته على السايت
 bench --site your-site.local install-app mu_contracts

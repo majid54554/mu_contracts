@@ -2,7 +2,7 @@ app_name = "mu_contracts"
 app_title = "MU Contracts"
 app_publisher = "Majid"
 app_description = "Arabic Employee Contracts e-signing system"
-app_email = "majid@local.test"
+app_email = "majid54554@gmail.com"
 app_license = "mit"
 
 jinja = {

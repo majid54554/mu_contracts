@@ -1,7 +1,7 @@
 [project]
 name = "mu_contracts"
 authors = [
-    { name = "Majid", email = "majid@local.test"}
+    { name = "Majid", email = "majid54554@gmail.com"}
 ]
 description = "Arabic Employee Contracts e-signing system for Frappe / ERPNext (نظام عقود إلكترونية للموظفين)"
 requires-python = ">=3.10"
