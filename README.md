@@ -21,11 +21,13 @@
 
 ## المتطلبات
 
-- Frappe Framework **v17** (لم يُختبر على إصدارات أقدم)
+- Frappe Framework **v15 / v16 / v17**
 - Python **3.10+**
 - `hijri-converter>=2.3.0` (يثبت تلقائياً مع التطبيق)
-- **Chrome PDF Generator** مفعّل في Frappe (للحصول على PDFs عالية الجودة بالعربي)
-  - يثبت من `bench setup chrome`
+- **مولّد PDF بجودة عالية** (مهم للعربي / RTL):
+  - **v17**: مدمج (`get_chrome_pdf`) — لا يحتاج إعداد
+  - **v15 / v16**: ثبّت Playwright (انظر قسم التثبيت بالأسفل) أو طبّق print_designer app
+  - بدون أي منهم، يستخدم `wkhtmltopdf` تلقائياً لكن الجودة سيئة مع العربية
 
 ---
 
@@ -49,7 +51,29 @@ bench restart
 - تثبيت Print Format "Contract Employee"
 - ضبطه كافتراضي عبر Property Setter
 - إنشاء Contract Settings مع قيم افتراضية
-- إضافة Workspace "First Party" مع اختصارات
+- إضافة Workspace "إدارة العقود" مع اختصارات
+
+### تثبيت Playwright لجودة PDF أفضل (مهم لـ Frappe v15 / v16)
+
+بدون مولد PDF حديث، الـ wkhtmltopdf يفسد تنسيق العربي. ثبّت Playwright:
+
+```bash
+cd /path/to/frappe-bench
+
+# 1. ثبّت مكتبة Playwright
+./env/bin/pip install playwright
+
+# 2. حمّل نسخة Chromium الـ headless
+./env/bin/playwright install chromium
+
+# 3. (Linux فقط) ثبّت اعتماديات النظام للـ Chromium
+sudo ./env/bin/playwright install-deps chromium
+
+# 4. أعد تشغيل البنش
+bench restart
+```
+
+بعدها، التطبيق يكتشف Playwright تلقائياً ويستخدمه لتوليد PDFs بجودة Chrome — مع دعم كامل للعربية، Google Fonts، RTL، والـ ligatures.
 
 ---
 

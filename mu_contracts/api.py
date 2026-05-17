@@ -391,12 +391,14 @@ def _html_to_pdf(html: str, pf_name: str) -> bytes:
 	"""Convert already-rendered HTML to PDF bytes using whatever generator
 	this Frappe version provides.
 
-	Order of preference:
+	Order of preference (best Arabic / RTL output first):
 	  1. frappe.utils.pdf.get_chrome_pdf — v17+ ships this directly
 	  2. pdf_generator hook — v15/v16 with print_designer-style apps register one
-	  3. frappe.utils.pdf.get_pdf (wkhtmltopdf) — always available fallback
+	  3. Playwright headless Chromium — best quality on v15 if installed
+	     (pip install playwright && playwright install chromium)
+	  4. frappe.utils.pdf.get_pdf (wkhtmltopdf) — always available, but poor RTL
 	"""
-	# Try Chrome generator on v17+
+	# 1. Built-in Chrome generator (v17+)
 	try:
 		from frappe.utils.pdf import get_chrome_pdf
 
@@ -414,7 +416,7 @@ def _html_to_pdf(html: str, pf_name: str) -> bytes:
 	except Exception:
 		frappe.log_error(title="get_chrome_pdf failed", message=frappe.get_traceback())
 
-	# Try hook-registered chrome generator (older Frappe + print_designer app)
+	# 2. Hook-registered chrome generator (older Frappe + print_designer app)
 	for hook in frappe.get_hooks("pdf_generator") or []:
 		try:
 			pdf = frappe.call(
@@ -430,10 +432,46 @@ def _html_to_pdf(html: str, pf_name: str) -> bytes:
 		except Exception:
 			frappe.log_error(title="pdf_generator hook failed", message=frappe.get_traceback())
 
-	# Final fallback: wkhtmltopdf
+	# 3. Playwright headless Chromium — recommended for v15 (huge quality jump
+	# over wkhtmltopdf for Arabic). Renders the HTML in real Chromium, so
+	# Google Fonts, RTL shaping, ligatures, and modern CSS all work.
+	try:
+		pdf = _html_to_pdf_via_playwright(html)
+		if pdf:
+			return pdf
+	except ImportError:
+		# Playwright not installed — fall through to wkhtmltopdf.
+		pass
+	except Exception:
+		frappe.log_error(title="playwright pdf failed", message=frappe.get_traceback())
+
+	# 4. wkhtmltopdf — always available, but Arabic rendering is poor.
 	from frappe.utils.pdf import get_pdf
 
 	return get_pdf(html)
+
+
+def _html_to_pdf_via_playwright(html: str) -> bytes:
+	"""Render HTML to PDF via Playwright (headless Chromium).
+
+	Requires:  pip install playwright  &&  playwright install chromium
+	"""
+	from playwright.sync_api import sync_playwright
+
+	with sync_playwright() as p:
+		browser = p.chromium.launch(args=["--no-sandbox"])
+		try:
+			page = browser.new_page()
+			# wait_until=networkidle so Google Fonts have time to load
+			page.set_content(html, wait_until="networkidle", timeout=30000)
+			pdf_bytes = page.pdf(
+				format="A4",
+				print_background=True,
+				prefer_css_page_size=True,
+			)
+			return pdf_bytes
+		finally:
+			browser.close()
 
 
 def _send_pdf_response(pdf_bytes: bytes, employee_name: str):
