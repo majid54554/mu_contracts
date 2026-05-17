@@ -1,9 +1,27 @@
 import base64
 import secrets
+from contextlib import contextmanager
 from datetime import date as _date
 
 import frappe
 from frappe import _
+
+
+@contextmanager
+def _as_administrator():
+	"""Run the block as Administrator if the current user is Guest.
+	Guest endpoints on /sign need to read/write Contract Employee records,
+	but Guest has no permission on that doctype. We authenticate the visitor
+	via phone + national_id + token, so it's safe to elevate inside these
+	endpoints."""
+	original = frappe.session.user
+	if original == "Guest":
+		frappe.set_user("Administrator")
+	try:
+		yield
+	finally:
+		if frappe.session.user != original:
+			frappe.set_user(original)
 
 
 def format_hijri(date_input=None):
@@ -274,31 +292,25 @@ def lookup_employee(phone: str, national_id: str):
 	if not phone_norm or not national_id:
 		frappe.throw(_("يرجى إدخال رقم الجوال ورقم الهوية"))
 
-	# Try every plausible phone format so a user entering 0501234567 still
-	# matches a stored +966501234567 (and vice versa). Match national_id
-	# exactly OR with leading/trailing whitespace stripped on either side.
-	rows = frappe.get_all(
-		"Contract Employee",
-		filters={
-			"phone_number": ["in", _phone_variants(phone)],
-			"national_id": national_id,
-		},
-		fields=["name", "employee_name", "is_signed"],
-		limit=1,
+	# Use frappe.db.sql directly (bypasses permission checks). In v15
+	# frappe.get_all enforces read permission for the current user, and Guest
+	# has none on Contract Employee — so it would return 0 rows even when the
+	# record exists. We're already auth'ing the visitor via phone+national_id.
+	variants = _phone_variants(phone)
+	placeholders = ", ".join(["%s"] * len(variants))
+	rows = frappe.db.sql(
+		f"""
+		SELECT name, employee_name, is_signed, national_id
+		FROM `tabContract Employee`
+		WHERE phone_number IN ({placeholders})
+		LIMIT 20
+		""",
+		variants,
+		as_dict=True,
 	)
-	if not rows:
-		# Fallback: maybe national_id is stored with extra whitespace.
-		# Look it up by phone variants alone and compare national_id loosely.
-		candidates = frappe.get_all(
-			"Contract Employee",
-			filters={"phone_number": ["in", _phone_variants(phone)]},
-			fields=["name", "employee_name", "is_signed", "national_id"],
-			limit=20,
-		)
-		for c in candidates:
-			if str(c.national_id or "").strip() == national_id:
-				rows = [c]
-				break
+	# Compare national_id loosely (strip whitespace from both sides) in case
+	# the stored value has stray spaces.
+	rows = [r for r in rows if str(r.national_id or "").strip() == national_id]
 
 	if not rows:
 		frappe.throw(_("لم نجد سجل بهذه البيانات. تأكد من رقم الجوال ورقم الهوية."))
@@ -320,14 +332,15 @@ def get_contract(token: str):
 	if not employee_id:
 		frappe.throw(_("انتهت جلسة التحقق. ابدأ من جديد."))
 
-	emp = frappe.get_doc("Contract Employee", employee_id)
-	if emp.is_signed:
-		frappe.throw(_("هذا العقد تم توقيعه مسبقاً."))
+	with _as_administrator():
+		emp = frappe.get_doc("Contract Employee", employee_id)
+		if emp.is_signed:
+			frappe.throw(_("هذا العقد تم توقيعه مسبقاً."))
 
-	return {
-		"employee_name": emp.employee_name,
-		"contract_html": _strip_embed_noise(_render_contract(emp)),
-	}
+		return {
+			"employee_name": emp.employee_name,
+			"contract_html": _strip_embed_noise(_render_contract(emp)),
+		}
 
 
 @frappe.whitelist(allow_guest=True)
@@ -336,14 +349,15 @@ def get_signed_contract(token: str):
 	if not employee_id:
 		frappe.throw(_("انتهت جلسة التحقق. ابدأ من جديد."))
 
-	emp = frappe.get_doc("Contract Employee", employee_id)
-	if not emp.is_signed:
-		frappe.throw(_("هذا العقد لم يتم توقيعه بعد."))
+	with _as_administrator():
+		emp = frappe.get_doc("Contract Employee", employee_id)
+		if not emp.is_signed:
+			frappe.throw(_("هذا العقد لم يتم توقيعه بعد."))
 
-	return {
-		"employee_name": emp.employee_name,
-		"signed_html": _build_signed_html(emp),
-	}
+		return {
+			"employee_name": emp.employee_name,
+			"signed_html": _build_signed_html(emp),
+		}
 
 
 def _build_contract_pdf_bytes(emp) -> bytes:
@@ -388,11 +402,12 @@ def download_signed_pdf(token: str):
 	if not employee_id:
 		frappe.throw(_("انتهت جلسة التحقق. ابدأ من جديد."))
 
-	emp = frappe.get_doc("Contract Employee", employee_id)
-	if not emp.is_signed:
-		frappe.throw(_("هذا العقد لم يتم توقيعه بعد."))
+	with _as_administrator():
+		emp = frappe.get_doc("Contract Employee", employee_id)
+		if not emp.is_signed:
+			frappe.throw(_("هذا العقد لم يتم توقيعه بعد."))
 
-	pdf_bytes = _build_contract_pdf_bytes(emp)
+		pdf_bytes = _build_contract_pdf_bytes(emp)
 
 	frappe.local.response.filename = f"contract-{emp.employee_name}.pdf"
 	frappe.local.response.filecontent = pdf_bytes
@@ -423,31 +438,34 @@ def submit_signature(token: str, signature_b64: str):
 	if not signature_b64 or "base64," not in signature_b64:
 		frappe.throw(_("التوقيع مطلوب"))
 
-	emp = frappe.get_doc("Contract Employee", employee_id)
-	if emp.is_signed:
-		frappe.throw(_("هذا العقد تم توقيعه مسبقاً."))
-
 	header, encoded = signature_b64.split("base64,", 1)
 	image_bytes = base64.b64decode(encoded)
 
-	from frappe.utils.file_manager import save_file
+	with _as_administrator():
+		emp = frappe.get_doc("Contract Employee", employee_id)
+		if emp.is_signed:
+			frappe.throw(_("هذا العقد تم توقيعه مسبقاً."))
 
-	sig_file = save_file(
-		f"signature-{emp.name}.png",
-		image_bytes,
-		"Contract Employee",
-		emp.name,
-		is_private=1,
-	)
+		from frappe.utils.file_manager import save_file
 
-	emp.signature_image = sig_file.file_url
-	emp.is_signed = 1
-	emp.signed_on = frappe.utils.now_datetime()
-	emp.signed_ip = frappe.local.request_ip
-	emp.save(ignore_permissions=True)
-	frappe.db.commit()
+		sig_file = save_file(
+			f"signature-{emp.name}.png",
+			image_bytes,
+			"Contract Employee",
+			emp.name,
+			is_private=1,
+		)
+
+		emp.signature_image = sig_file.file_url
+		emp.is_signed = 1
+		emp.signed_on = frappe.utils.now_datetime()
+		emp.signed_ip = frappe.local.request_ip
+		emp.save(ignore_permissions=True)
+		frappe.db.commit()
+
+		signed_html = _build_signed_html(emp)
 
 	return {
 		"success": True,
-		"signed_html": _build_signed_html(emp),
+		"signed_html": signed_html,
 	}
