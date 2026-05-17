@@ -396,6 +396,25 @@ def _build_contract_pdf_bytes(emp) -> bytes:
 			frappe.set_user(original_user)
 
 
+def _send_pdf_response(pdf_bytes: bytes, employee_name: str):
+	"""Build a PDF download response. We use response.type='binary' plus an
+	explicit Content-Disposition: attachment so mobile browsers (especially
+	iOS Safari) trigger a real download instead of trying to render inline."""
+	import re
+	from urllib.parse import quote
+
+	# ASCII fallback in case the name has chars that don't survive header encoding
+	safe_name = re.sub(r"[^A-Za-z0-9._-]+", "_", employee_name) or "employee"
+	utf8_name = quote(f"contract-{employee_name}.pdf")
+	frappe.local.response.filename = f"contract-{safe_name}.pdf"
+	frappe.local.response.filecontent = pdf_bytes
+	frappe.local.response.type = "binary"
+	frappe.local.response.headers = {
+		"Content-Type": "application/pdf",
+		"Content-Disposition": f"attachment; filename=\"contract-{safe_name}.pdf\"; filename*=UTF-8''{utf8_name}",
+	}
+
+
 @frappe.whitelist(allow_guest=True)
 def download_signed_pdf(token: str):
 	employee_id = frappe.cache.get_value(CACHE_PREFIX + token, shared=True)
@@ -409,9 +428,7 @@ def download_signed_pdf(token: str):
 
 		pdf_bytes = _build_contract_pdf_bytes(emp)
 
-	frappe.local.response.filename = f"contract-{emp.employee_name}.pdf"
-	frappe.local.response.filecontent = pdf_bytes
-	frappe.local.response.type = "pdf"
+	_send_pdf_response(pdf_bytes, emp.employee_name)
 
 
 @frappe.whitelist()
@@ -424,9 +441,7 @@ def download_contract_pdf(name: str):
 	emp = frappe.get_doc("Contract Employee", name)
 	pdf_bytes = _build_contract_pdf_bytes(emp)
 
-	frappe.local.response.filename = f"contract-{emp.employee_name}.pdf"
-	frappe.local.response.filecontent = pdf_bytes
-	frappe.local.response.type = "pdf"
+	_send_pdf_response(pdf_bytes, emp.employee_name)
 
 
 @frappe.whitelist(allow_guest=True)

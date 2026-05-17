@@ -167,36 +167,22 @@
 
 <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.2.0/dist/signature_pad.umd.min.js"></script>
 <script>
-async function downloadServerPDF() {
-  var btn = document.getElementById('btn-download-pdf');
-  var orig = btn.innerHTML;
+// Direct navigation works on every browser (including iOS Safari & Android
+// Chrome). The blob+fetch approach we used before fails on mobile because
+// download attribute + blob URL isn't reliable there. Server sends
+// Content-Disposition: attachment so the browser triggers a download.
+function downloadServerPDF() {
   if (!window._signToken) {
     alert('انتهت جلسة التحقق. يرجى البدء من جديد.');
     return;
   }
-  btn.disabled = true;
-  btn.innerHTML = '⏳ جاري التحضير...';
-  try {
-    var url = '/api/method/mu_contracts.api.download_signed_pdf?token=' + encodeURIComponent(window._signToken);
-    var res = await fetch(url);
-    if (!res.ok) {
-      var data = await res.json().catch(() => ({}));
-      throw new Error(data.message || 'فشل التحميل');
-    }
-    var blob = await res.blob();
-    var dlUrl = URL.createObjectURL(blob);
-    var a = document.createElement('a');
-    a.href = dlUrl;
-    a.download = 'contract.pdf';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(dlUrl);
-    btn.innerHTML = '✅ تم التحميل';
-    setTimeout(function(){ btn.innerHTML = orig; btn.disabled = false; }, 1500);
-  } catch (err) {
-    btn.innerHTML = '❌ ' + err.message;
-    setTimeout(function(){ btn.innerHTML = orig; btn.disabled = false; }, 3000);
+  var url = '/api/method/mu_contracts.api.download_signed_pdf?token=' + encodeURIComponent(window._signToken);
+  // Open in new tab — on desktop it opens a new tab and downloads,
+  // on mobile the browser handles the download or opens the PDF viewer.
+  // Fall back to same-tab navigation if popup is blocked.
+  var w = window.open(url, '_blank');
+  if (!w || w.closed || typeof w.closed === 'undefined') {
+    window.location.href = url;
   }
 }
 </script>
