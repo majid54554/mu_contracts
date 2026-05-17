@@ -361,13 +361,12 @@ def get_signed_contract(token: str):
 
 
 def _build_contract_pdf_bytes(emp) -> bytes:
-	"""Generate PDF bytes for an employee contract using Chrome PDF generator.
+	"""Generate PDF bytes for an employee contract.
 
 	Renders the HTML first, inlines the private signature image as base64
 	(Chrome sub-process has no session to fetch /private/files/...), then hands
-	the rewritten HTML to the chrome PDF generator hook directly."""
-	from frappe.utils.pdf import get_chrome_pdf
-
+	the rewritten HTML to the best available PDF generator (chrome if installed,
+	otherwise wkhtmltopdf)."""
 	pf_name = _get_print_format_name() or "Contract Employee"
 
 	original_user = frappe.session.user
@@ -380,20 +379,61 @@ def _build_contract_pdf_bytes(emp) -> bytes:
 			print_format=pf_name,
 			no_letterhead=True,
 			as_pdf=False,
-			pdf_generator="chrome",
 		)
 		html = _inline_contract_images(html, emp)
+		return _html_to_pdf(html, pf_name)
+	finally:
+		if frappe.session.user != original_user:
+			frappe.set_user(original_user)
 
-		return get_chrome_pdf(
+
+def _html_to_pdf(html: str, pf_name: str) -> bytes:
+	"""Convert already-rendered HTML to PDF bytes using whatever generator
+	this Frappe version provides.
+
+	Order of preference:
+	  1. frappe.utils.pdf.get_chrome_pdf — v17+ ships this directly
+	  2. pdf_generator hook — v15/v16 with print_designer-style apps register one
+	  3. frappe.utils.pdf.get_pdf (wkhtmltopdf) — always available fallback
+	"""
+	# Try Chrome generator on v17+
+	try:
+		from frappe.utils.pdf import get_chrome_pdf
+
+		pdf = get_chrome_pdf(
 			print_format=pf_name,
 			html=html,
 			options={},
 			output=None,
 			pdf_generator="chrome",
 		)
-	finally:
-		if frappe.session.user != original_user:
-			frappe.set_user(original_user)
+		if pdf:
+			return pdf
+	except ImportError:
+		pass
+	except Exception:
+		frappe.log_error(title="get_chrome_pdf failed", message=frappe.get_traceback())
+
+	# Try hook-registered chrome generator (older Frappe + print_designer app)
+	for hook in frappe.get_hooks("pdf_generator") or []:
+		try:
+			pdf = frappe.call(
+				hook,
+				print_format=pf_name,
+				html=html,
+				options={},
+				output=None,
+				pdf_generator="chrome",
+			)
+			if pdf:
+				return pdf
+		except Exception:
+			frappe.log_error(title="pdf_generator hook failed", message=frappe.get_traceback())
+
+	# Final fallback: wkhtmltopdf
+	from frappe.utils.pdf import get_pdf
+
+	return get_pdf(html)
 
 
 def _send_pdf_response(pdf_bytes: bytes, employee_name: str):
