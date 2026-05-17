@@ -170,14 +170,14 @@
 async function downloadServerPDF() {
   var btn = document.getElementById('btn-download-pdf');
   var orig = btn.innerHTML;
-  if (!window.__signToken) {
+  if (!window._signToken) {
     alert('انتهت جلسة التحقق. يرجى البدء من جديد.');
     return;
   }
   btn.disabled = true;
   btn.innerHTML = '⏳ جاري التحضير...';
   try {
-    var url = '/api/method/mu_contracts.api.download_signed_pdf?token=' + encodeURIComponent(window.__signToken);
+    var url = '/api/method/mu_contracts.api.download_signed_pdf?token=' + encodeURIComponent(window._signToken);
     var res = await fetch(url);
     if (!res.ok) {
       var data = await res.json().catch(() => ({}));
@@ -261,7 +261,7 @@ async function downloadServerPDF() {
     try {
       const r = await callApi('lookup_employee', {phone, national_id});
       token = r.token;
-      window.__signToken = token;
+      window._signToken = token;
       if (r.already_signed) {
         const sc = await callApi('get_signed_contract', {token});
         document.getElementById('signed-contract-content').innerHTML = sc.signed_html;
