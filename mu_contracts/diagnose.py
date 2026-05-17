@@ -1,16 +1,41 @@
 """Diagnostic script for PDF rendering issues.
 
-Run on the customer server with:
-    bench --site SITE execute mu_contracts.diagnose.run
+Three ways to run:
 
-It prints which PDF generator the app will end up using, whether the font
-files are reachable on disk, whether Playwright is installed, etc.
+  1. System Console (Desk → Search "System Console" → paste):
+         from mu_contracts.diagnose import run_text
+         print(run_text())
+
+  2. Direct URL (Administrator login required):
+         /api/method/mu_contracts.diagnose.run_api
+
+  3. SSH / bench:
+         bench --site SITE execute mu_contracts.diagnose.run
 """
 
 import os
 import subprocess
 
 import frappe
+
+
+def run_text() -> str:
+	"""Capture diagnostic output as a string instead of printing."""
+	import io
+	import contextlib
+
+	buf = io.StringIO()
+	with contextlib.redirect_stdout(buf):
+		run()
+	return buf.getvalue()
+
+
+@frappe.whitelist()
+def run_api() -> str:
+	"""Web-accessible wrapper — only callable by users with System Manager role."""
+	if "System Manager" not in frappe.get_roles(frappe.session.user):
+		frappe.throw("Only System Manager can run diagnostics.")
+	return run_text()
 
 
 def run():
