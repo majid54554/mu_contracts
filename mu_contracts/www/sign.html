@@ -93,7 +93,7 @@
 {% block page_content %}
 <script>
   window.frappe = window.frappe || {};
-  window.frappe.csrf_token = "{{ frappe.session.csrf_token if frappe.session.user != 'Guest' else '' }}";
+  window.frappe.csrf_token = "{{ csrf_token or '' }}";
 </script>
 <div class="app">
 
