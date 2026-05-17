@@ -1,0 +1,20 @@
+{
+ "app": "mu_contracts",
+ "creation": "2026-05-15 00:00:00",
+ "docstatus": 0,
+ "doctype": "Desktop Icon",
+ "hidden": 0,
+ "icon": "mu_contracts",
+ "icon_type": "Link",
+ "idx": 1,
+ "label": "MU Contracts",
+ "link_to": "MU Contracts",
+ "link_type": "Workspace Sidebar",
+ "modified": "2026-05-15 00:00:00",
+ "modified_by": "Administrator",
+ "name": "MU Contracts",
+ "owner": "Administrator",
+ "restrict_removal": 0,
+ "roles": [],
+ "standard": 1
+}

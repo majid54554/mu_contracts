@@ -1,0 +1,343 @@
+{% extends "templates/web.html" %}
+
+{% block title %}توقيع العقد{% endblock %}
+
+{% block head_include %}
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F8FAFC; --surface:#FFFFFF; --ink:#0F172A; --ink-2:#475569; --ink-3:#94A3B8;
+    --line:#E2E8F0; --primary:#1E3A8A; --primary-2:#2563EB;
+    --success:#059669; --danger:#DC2626;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);direction:rtl;
+    font-family:'IBM Plex Sans Arabic',-apple-system,sans-serif;font-size:15px}
+  .navbar,.page-head,.web-footer,footer,.breadcrumb-container{display:none !important}
+  .page-content{padding:0 !important}
+  .app{max-width:760px;margin:0 auto;padding:24px 16px 80px}
+  body.success-view .app{max-width:880px}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:24px;box-shadow:0 1px 3px rgba(15,23,42,.06);margin-bottom:16px}
+  h1{font-size:22px;margin:0 0 8px;font-weight:700}
+  h2{font-size:18px;margin:0 0 12px;font-weight:600}
+  .muted{color:var(--ink-2);font-size:14px}
+  label{display:block;margin-bottom:6px;font-weight:500}
+  input[type=text],input[type=tel]{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:10px;font-family:inherit;font-size:16px;background:var(--bg)}
+  input:focus{outline:none;border-color:var(--primary-2);background:#fff}
+  .field{margin-bottom:14px}
+  .btn{display:inline-block;padding:12px 24px;border:none;border-radius:10px;font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;text-decoration:none;text-align:center}
+  .btn-primary{background:var(--primary);color:#fff}
+  .btn-primary:hover{background:var(--primary-2)}
+  .btn-secondary{background:#fff;color:var(--ink);border:1px solid var(--line)}
+  .btn-success{background:var(--success);color:#fff}
+  .btn-block{display:block;width:100%}
+  .error{color:var(--danger);background:#FEF2F2;padding:10px 14px;border-radius:8px;margin-top:10px;font-size:14px}
+  .success-banner{color:var(--success);background:#ECFDF5;padding:14px;border-radius:8px;font-size:15px;text-align:center;font-weight:600;margin-bottom:16px}
+  .contract{border:1px solid var(--line);border-radius:10px;padding:0;max-height:480px;overflow-y:auto;background:#fff;line-height:1.85;position:relative}
+  .contract h2,.contract h4{font-weight:700}
+  .signed-contract{border:1px solid var(--line);border-radius:10px;padding:0;background:#fff;line-height:1.6;position:relative;overflow:hidden}
+
+  /* Force embedded Print Format to fit the container (no A4 sizing on screen) */
+  .contract .ec-wrap,.signed-contract .ec-wrap,
+  .contract .ec,.signed-contract .ec,
+  .contract .ec-header,.signed-contract .ec-header,
+  .contract .ec-footer,.signed-contract .ec-footer{
+    position:static !important;width:100% !important;max-width:100% !important;
+    min-height:auto !important;background-image:none !important;
+    box-shadow:none !important;margin:0 !important;
+  }
+  .contract .ec,.signed-contract .ec{
+    padding:18px !important;font-size:11pt !important;line-height:1.6 !important;
+    width:auto !important;
+  }
+  .contract .ec-header,.signed-contract .ec-header,
+  .contract .ec-footer,.signed-contract .ec-footer{
+    height:auto !important;display:block !important;
+    border:none !important;padding:0 !important;
+  }
+  /* Hide letterhead images in screen preview (visible in printed PDF only) */
+  .contract .ec-header,.signed-contract .ec-header{display:none !important}
+  .contract .ec-footer,.signed-contract .ec-footer{display:none !important}
+  /* Hide Frappe printview toolbar (Print / Get PDF buttons) */
+  .contract .action-banner,.signed-contract .action-banner,
+  .contract .print-format-toolbar,.signed-contract .print-format-toolbar,
+  .contract #print-controller,.signed-contract #print-controller,
+  .contract .print-toolbar,.signed-contract .print-toolbar{display:none !important}
+  .contract table,.signed-contract table{width:100% !important;table-layout:auto !important}
+  .contract img,.signed-contract img{max-width:100% !important;height:auto !important}
+  .contract *,.signed-contract *{box-sizing:border-box !important}
+  .signature-wrap{margin-top:16px}
+  #signature-pad{width:100%;height:180px;background:#fff;border:2px dashed var(--ink-3);border-radius:10px;touch-action:none}
+  .agree-row{display:flex;align-items:center;gap:8px;margin:14px 0;font-size:14px}
+  .actions{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+  .actions .btn{flex:1;min-width:140px}
+  .header-step{display:flex;align-items:center;gap:8px;margin-bottom:18px;color:var(--ink-3);font-size:13px}
+  .header-step .dot{width:8px;height:8px;border-radius:50%;background:var(--ink-3)}
+  .header-step .dot.active{background:var(--primary-2)}
+  .header-step .dot.done{background:var(--success)}
+
+  /* Print-only view */
+  @media print {
+    body{background:#fff}
+    .app{max-width:none;padding:0}
+    .card{border:none;box-shadow:none;padding:0}
+    .no-print,.header-step,.success-banner,.actions,button,#step-identity,#step-verify,#step-sign{display:none !important}
+    .signed-contract{border:none;padding:0;max-height:none;overflow:visible}
+  }
+</style>
+{% endblock %}
+
+{% block page_content %}
+<script>
+  window.frappe = window.frappe || {};
+  window.frappe.csrf_token = "{{ frappe.session.csrf_token if frappe.session.user != 'Guest' else '' }}";
+</script>
+<div class="app">
+
+  <div id="step-identity" class="card">
+    <div class="header-step">
+      <span class="dot active"></span> <span>الخطوة 1 من 3 — التحقق من الهوية</span>
+    </div>
+    <h1>توقيع العقد</h1>
+    <p class="muted">يرجى إدخال رقم جوالك ورقم الهوية للتحقق من بياناتك.</p>
+
+    <form id="form-identity">
+      <div class="field">
+        <label>رقم الجوال</label>
+        <input type="tel" id="phone" inputmode="numeric" pattern="[0-9+]*" required>
+      </div>
+      <div class="field">
+        <label>رقم الهوية</label>
+        <input type="text" id="national_id" inputmode="numeric" pattern="[0-9]*" required>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">التحقق ←</button>
+      <div id="err-identity" class="error" style="display:none"></div>
+    </form>
+  </div>
+
+  <div id="step-verify" class="card" style="display:none">
+    <div class="header-step">
+      <span class="dot done"></span> <span class="dot active"></span> <span>الخطوة 2 من 3 — تأكيد الهوية</span>
+    </div>
+    <h1>تأكيد البيانات</h1>
+    <p class="muted">هل أنت:</p>
+    <p style="font-size:20px;font-weight:700;margin:12px 0 24px" id="employee-name-display"></p>
+    <div class="actions">
+      <button class="btn btn-primary" id="btn-confirm">نعم، أكمل</button>
+      <button class="btn btn-secondary" id="btn-deny">لا، رجوع</button>
+    </div>
+  </div>
+
+  <div id="step-sign" class="card" style="display:none">
+    <div class="header-step">
+      <span class="dot done"></span> <span class="dot done"></span> <span class="dot active"></span> <span>الخطوة 3 من 3 — قراءة العقد والتوقيع</span>
+    </div>
+    <h1>العقد</h1>
+    <div id="contract-content" class="contract"></div>
+
+    <div class="signature-wrap">
+      <h2>التوقيع</h2>
+      <p class="muted" style="margin:0 0 8px">وقّع داخل المربع باستخدام إصبعك أو الفأرة</p>
+      <canvas id="signature-pad"></canvas>
+      <div style="text-align:left;margin-top:6px">
+        <button type="button" id="btn-clear-sig" class="btn btn-secondary" style="padding:6px 14px;font-size:13px">مسح</button>
+      </div>
+    </div>
+
+    <label class="agree-row">
+      <input type="checkbox" id="agree"> أُقرّ بأنني قرأت ووافقت على جميع بنود العقد
+    </label>
+
+    <button id="btn-submit-sig" class="btn btn-success btn-block">تأكيد التوقيع ←</button>
+    <div id="err-sign" class="error" style="display:none"></div>
+  </div>
+
+  <div id="step-success" class="card" style="display:none">
+    <div class="success-banner no-print">✅ تم توقيع العقد بنجاح</div>
+    <div class="actions no-print">
+      <button id="btn-download-pdf" class="btn btn-primary btn-block" onclick="downloadServerPDF()">📥 تحميل العقد PDF</button>
+    </div>
+    <div id="signed-contract-content" class="signed-contract" style="margin-top:16px"></div>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.2.0/dist/signature_pad.umd.min.js"></script>
+<script>
+async function downloadServerPDF() {
+  var btn = document.getElementById('btn-download-pdf');
+  var orig = btn.innerHTML;
+  if (!window.__signToken) {
+    alert('انتهت جلسة التحقق. يرجى البدء من جديد.');
+    return;
+  }
+  btn.disabled = true;
+  btn.innerHTML = '⏳ جاري التحضير...';
+  try {
+    var url = '/api/method/mu_contracts.api.download_signed_pdf?token=' + encodeURIComponent(window.__signToken);
+    var res = await fetch(url);
+    if (!res.ok) {
+      var data = await res.json().catch(() => ({}));
+      throw new Error(data.message || 'فشل التحميل');
+    }
+    var blob = await res.blob();
+    var dlUrl = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = dlUrl;
+    a.download = 'contract.pdf';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(dlUrl);
+    btn.innerHTML = '✅ تم التحميل';
+    setTimeout(function(){ btn.innerHTML = orig; btn.disabled = false; }, 1500);
+  } catch (err) {
+    btn.innerHTML = '❌ ' + err.message;
+    setTimeout(function(){ btn.innerHTML = orig; btn.disabled = false; }, 3000);
+  }
+}
+</script>
+<script>
+(function(){
+  let token = null;
+  let signaturePad = null;
+
+  function show(id){
+    ['step-identity','step-verify','step-sign','step-success'].forEach(s => {
+      document.getElementById(s).style.display = (s===id ? 'block' : 'none');
+    });
+    document.body.classList.toggle('success-view', id === 'step-success');
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+
+  function showError(elId, msg){
+    const el = document.getElementById(elId);
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+  function hideError(elId){ document.getElementById(elId).style.display = 'none'; }
+
+  async function callApi(method, args){
+    const headers = {'Content-Type':'application/x-www-form-urlencoded'};
+    if (window.frappe && window.frappe.csrf_token) {
+      headers['X-Frappe-CSRF-Token'] = window.frappe.csrf_token;
+    }
+    const res = await fetch('/api/method/mu_contracts.api.' + method, {
+      method: 'POST', headers,
+      body: new URLSearchParams(args).toString()
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      const exc = (data._server_messages ? JSON.parse(JSON.parse(data._server_messages)[0]).message : '') || data.message || 'خطأ غير معروف';
+      throw new Error(exc);
+    }
+    return data.message;
+  }
+
+  function sizeCanvas(canvas){
+    const ratio = Math.max(window.devicePixelRatio || 1, 1);
+    canvas.width = canvas.offsetWidth * ratio;
+    canvas.height = canvas.offsetHeight * ratio;
+    canvas.getContext('2d').scale(ratio, ratio);
+    return ratio;
+  }
+  function resizeCanvas(){
+    const canvas = document.getElementById('signature-pad');
+    if (!canvas || !signaturePad) return;
+    const data = signaturePad.toData();
+    sizeCanvas(canvas);
+    signaturePad.clear();
+    if (data && data.length) signaturePad.fromData(data);
+  }
+
+  document.getElementById('form-identity').onsubmit = async (e) => {
+    e.preventDefault();
+    hideError('err-identity');
+    const phone = document.getElementById('phone').value.trim();
+    const national_id = document.getElementById('national_id').value.trim();
+    try {
+      const r = await callApi('lookup_employee', {phone, national_id});
+      token = r.token;
+      window.__signToken = token;
+      if (r.already_signed) {
+        const sc = await callApi('get_signed_contract', {token});
+        document.getElementById('signed-contract-content').innerHTML = sc.signed_html;
+        show('step-success');
+        return;
+      }
+      document.getElementById('employee-name-display').textContent = r.employee_name;
+      show('step-verify');
+    } catch (err) {
+      showError('err-identity', err.message);
+    }
+  };
+
+  document.getElementById('btn-deny').onclick = () => { token = null; show('step-identity'); };
+
+  function initSignaturePad(){
+    const canvas = document.getElementById('signature-pad');
+    if (!canvas) return false;
+    // Only init once we actually have layout (background/throttled tabs skip
+    // requestAnimationFrame, so we just retry with a longer setTimeout).
+    if (!canvas.offsetWidth || !canvas.offsetHeight) {
+      setTimeout(initSignaturePad, 100);
+      return false;
+    }
+    // Size canvas FIRST — changing width/height resets the 2d context, so
+    // doing it after SignaturePad bound would break its stored context ref.
+    sizeCanvas(canvas);
+    signaturePad = new SignaturePad(canvas, {
+      backgroundColor: '#fff',
+      penColor: '#0F172A',
+      minWidth: 0.8,
+      maxWidth: 2.5,
+    });
+    window.addEventListener('resize', resizeCanvas);
+    return true;
+  }
+
+  document.getElementById('btn-confirm').onclick = async () => {
+    try {
+      const r = await callApi('get_contract', {token});
+      document.getElementById('contract-content').innerHTML = r.contract_html;
+      show('step-sign');
+      // Try immediately (canvas should have layout once step-sign is display:block),
+      // initSignaturePad() will retry itself if offsetWidth is still 0.
+      setTimeout(initSignaturePad, 50);
+    } catch (err) {
+      alert(err.message);
+      show('step-identity');
+    }
+  };
+
+  document.getElementById('btn-clear-sig').onclick = () => signaturePad && signaturePad.clear();
+
+  document.getElementById('btn-submit-sig').onclick = async () => {
+    hideError('err-sign');
+    if (!document.getElementById('agree').checked) {
+      showError('err-sign', 'يجب الموافقة على بنود العقد قبل المتابعة');
+      return;
+    }
+    if (!signaturePad || signaturePad.isEmpty()) {
+      showError('err-sign', 'التوقيع مطلوب');
+      return;
+    }
+    const btn = document.getElementById('btn-submit-sig');
+    btn.disabled = true;
+    btn.textContent = 'جاري الحفظ...';
+    try {
+      const r = await callApi('submit_signature', {token, signature_b64: signaturePad.toDataURL('image/png')});
+      document.getElementById('signed-contract-content').innerHTML = r.signed_html;
+      show('step-success');
+    } catch (err) {
+      showError('err-sign', err.message);
+      btn.disabled = false;
+      btn.textContent = 'تأكيد التوقيع ←';
+    }
+  };
+})();
+</script>
+{% endblock %}

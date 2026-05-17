@@ -1,0 +1,88 @@
+{
+ "app": "mu_contracts",
+ "creation": "2026-05-15 00:00:00",
+ "docstatus": 0,
+ "doctype": "Workspace Sidebar",
+ "header_icon": "users",
+ "idx": 0,
+ "items": [
+  {
+   "child": 0,
+   "collapsible": 1,
+   "icon": "home",
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "إدارة الموظفين",
+   "link_to": "First Party",
+   "link_type": "Workspace",
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
+   "child": 0,
+   "collapsible": 1,
+   "icon": "user-round",
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "بيانات الموظفين",
+   "link_to": "Contract Employee",
+   "link_type": "DocType",
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
+   "child": 0,
+   "collapsible": 1,
+   "icon": "file-up",
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "استيراد من Excel",
+   "link_to": "Data Import",
+   "link_type": "DocType",
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
+   "child": 0,
+   "collapsible": 1,
+   "icon": "file-text",
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "العقود",
+   "link_type": "DocType",
+   "show_arrow": 0,
+   "type": "Section Break"
+  },
+  {
+   "child": 1,
+   "collapsible": 1,
+   "icon": "",
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "الموقّعون",
+   "link_to": "contract-employee?is_signed=1",
+   "link_type": "URL",
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
+   "child": 1,
+   "collapsible": 1,
+   "icon": "",
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "بانتظار التوقيع",
+   "link_to": "contract-employee?is_signed=0",
+   "link_type": "URL",
+   "show_arrow": 0,
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-05-15 00:00:00",
+ "modified_by": "Administrator",
+ "module": "MU Contracts",
+ "name": "MU Contracts",
+ "owner": "Administrator",
+ "standard": 1,
+ "title": "إدارة العقود"
+}

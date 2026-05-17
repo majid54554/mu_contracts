@@ -1,0 +1,62 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "format:EMP-{YYYY}-{#####}",
+ "creation": "2026-05-15 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_employee",
+  "employee_name", "national_id", "phone_number",
+  "col_break_1",
+  "nationality", "date_of_birth", "national_address",
+  "section_contract",
+  "position", "salary",
+  "col_break_2",
+  "start_date",
+  "section_signing",
+  "is_signed", "signed_on", "signed_ip",
+  "col_break_3",
+  "signature_image", "signed_pdf"
+ ],
+ "fields": [
+  {"fieldname": "section_employee", "fieldtype": "Section Break", "label": "بيانات الموظف"},
+  {"fieldname": "employee_name", "fieldtype": "Data", "label": "اسم الموظف", "reqd": 1, "in_list_view": 1, "in_standard_filter": 1},
+  {"fieldname": "national_id", "fieldtype": "Data", "label": "رقم الهوية", "reqd": 1, "unique": 1, "in_list_view": 1, "in_standard_filter": 1},
+  {"fieldname": "phone_number", "fieldtype": "Data", "label": "رقم الجوال", "reqd": 1, "unique": 1, "in_list_view": 1, "in_standard_filter": 1},
+  {"fieldname": "col_break_1", "fieldtype": "Column Break"},
+  {"fieldname": "nationality", "fieldtype": "Data", "label": "الجنسية"},
+  {"fieldname": "date_of_birth", "fieldtype": "Date", "label": "تاريخ الميلاد"},
+  {"fieldname": "national_address", "fieldtype": "Data", "label": "العنوان الوطني"},
+
+  {"fieldname": "section_contract", "fieldtype": "Section Break", "label": "تفاصيل العقد"},
+  {"fieldname": "position", "fieldtype": "Data", "label": "المسمى الوظيفي", "in_list_view": 1},
+  {"fieldname": "salary", "fieldtype": "Currency", "label": "المكافأة المقطوعة", "description": "المبلغ يدفع بعد تنفيذ المهمة", "in_list_view": 1},
+  {"fieldname": "col_break_2", "fieldtype": "Column Break"},
+  {"fieldname": "start_date", "fieldtype": "Date", "label": "تاريخ بدء العقد", "description": "العقد مدته 15 يوم — تاريخ النهاية يحسب تلقائياً"},
+
+  {"fieldname": "section_signing", "fieldtype": "Section Break", "label": "حالة التوقيع", "collapsible": 1},
+  {"fieldname": "is_signed", "fieldtype": "Check", "label": "تم التوقيع", "default": 0, "read_only": 1, "in_list_view": 1, "in_standard_filter": 1},
+  {"fieldname": "signed_on", "fieldtype": "Datetime", "label": "تاريخ التوقيع", "read_only": 1},
+  {"fieldname": "signed_ip", "fieldtype": "Data", "label": "عنوان IP", "read_only": 1},
+  {"fieldname": "col_break_3", "fieldtype": "Column Break"},
+  {"fieldname": "signature_image", "fieldtype": "Attach Image", "label": "صورة التوقيع", "read_only": 1},
+  {"fieldname": "signed_pdf", "fieldtype": "Attach", "label": "العقد الموقّع PDF", "read_only": 1}
+ ],
+ "is_submittable": 0,
+ "links": [],
+ "modified": "2026-05-16 00:00:00",
+ "modified_by": "Administrator",
+ "module": "MU Contracts",
+ "name": "Contract Employee",
+ "owner": "Administrator",
+ "permissions": [
+  {"role": "System Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "report": 1, "export": 1, "import": 1, "share": 1, "print": 1, "email": 1},
+  {"role": "HR Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "report": 1, "export": 1, "import": 1, "share": 1, "print": 1, "email": 1}
+ ],
+ "search_fields": "employee_name,phone_number,national_id",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "title_field": "employee_name",
+ "track_changes": 1
+}

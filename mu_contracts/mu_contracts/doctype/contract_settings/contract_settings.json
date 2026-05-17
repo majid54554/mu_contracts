@@ -1,0 +1,56 @@
+{
+ "actions": [],
+ "creation": "2026-05-17 00:00:00",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "section_company",
+  "company_name",
+  "commercial_registration",
+  "unified_number",
+  "col_break_1",
+  "city",
+  "company_phone",
+  "company_email",
+  "section_first_party",
+  "first_party_name",
+  "first_party_id",
+  "first_party_birth_date",
+  "col_break_2",
+  "first_party_role",
+  "first_party_signature"
+ ],
+ "fields": [
+  {"fieldname": "section_company", "fieldtype": "Section Break", "label": "بيانات المؤسسة"},
+  {"fieldname": "company_name", "fieldtype": "Data", "label": "اسم المؤسسة", "default": "مؤسسة وجهات المرشدين للخدمات العامة"},
+  {"fieldname": "commercial_registration", "fieldtype": "Data", "label": "السجل التجاري", "default": "4031252525"},
+  {"fieldname": "unified_number", "fieldtype": "Data", "label": "الرقم الوطني الموحد", "default": "7024160462"},
+  {"fieldname": "col_break_1", "fieldtype": "Column Break"},
+  {"fieldname": "city", "fieldtype": "Data", "label": "المدينة", "default": "مكة المكرمة"},
+  {"fieldname": "company_phone", "fieldtype": "Data", "label": "هاتف المؤسسة"},
+  {"fieldname": "company_email", "fieldtype": "Data", "label": "البريد الإلكتروني"},
+
+  {"fieldname": "section_first_party", "fieldtype": "Section Break", "label": "بيانات الطرف الأول"},
+  {"fieldname": "first_party_name", "fieldtype": "Data", "label": "اسم الطرف الأول", "default": "محمد إبراهيم محمود جليسه"},
+  {"fieldname": "first_party_id", "fieldtype": "Data", "label": "رقم الهوية", "default": "1004874507"},
+  {"fieldname": "first_party_birth_date", "fieldtype": "Data", "label": "تاريخ الميلاد (هجري)", "description": "مثال: 20 / 12 / 1416", "default": "20 / 12 / 1416"},
+  {"fieldname": "col_break_2", "fieldtype": "Column Break"},
+  {"fieldname": "first_party_role", "fieldtype": "Data", "label": "الصفة", "default": "المالك"},
+  {"fieldname": "first_party_signature", "fieldtype": "Attach Image", "label": "صورة التوقيع", "description": "PNG مفضل بخلفية شفافة. الحجم المقترح: 300×120 بكسل"}
+ ],
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-05-17 00:00:00",
+ "modified_by": "Administrator",
+ "module": "MU Contracts",
+ "name": "Contract Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {"role": "System Manager", "read": 1, "write": 1, "create": 1, "report": 0, "export": 1, "share": 1, "print": 1, "email": 1},
+  {"role": "HR Manager", "read": 1, "write": 1, "create": 1, "report": 0, "export": 1, "share": 1, "print": 1, "email": 1}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}

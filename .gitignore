@@ -1,0 +1,53 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+build/
+dist/
+*.egg
+*.whl
+
+# Virtual envs
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+.AppleDouble
+.LSOverride
+
+# Frappe / Bench
+*.pid
+*.log
+node_modules/
+package-lock.json
+yarn.lock
+
+# Local site-specific data (sensitive)
+sites/
+config/
+logs/
+.frappe/
+
+# Test / temp
+*.bak
+*.tmp
+/tmp/
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Translations (build artifacts)
+**/translations/*.csv.bak
