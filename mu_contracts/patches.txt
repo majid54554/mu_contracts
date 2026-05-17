@@ -5,3 +5,4 @@
 [post_model_sync]
 # Patches added in this section will be executed after doctypes are migrated
 mu_contracts.patches.v01.rename_workspace
+mu_contracts.patches.v01.cleanup_old_first_party
